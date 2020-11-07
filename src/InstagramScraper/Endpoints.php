@@ -42,7 +42,7 @@ class Endpoints
 
     const GRAPH_QL_QUERY_URL = 'https://www.instagram.com/graphql/query/?query_id={{queryId}}';
 
-    private static $requestMediaCount = 30;
+    private static $requestMediaCount = 15;
 
     /**
      * @param int $count
