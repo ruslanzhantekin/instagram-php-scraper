@@ -190,6 +190,56 @@ class Instagram
         }
         return $accounts;
     }
+    
+     /**
+     * @param string $username
+     *
+     * @return array
+     * @throws InstagramException
+     * @throws InstagramNotFoundException
+     */
+    public function searchAccountsAndTagsAndLocationsByUsername($username, $count = 10)
+    {
+        $response = Request::get(Endpoints::getGeneralSearchJsonLink($username, $count), $this->generateHeaders($this->userSession));
+
+        if (static::HTTP_NOT_FOUND === $response->code) {
+            throw new InstagramNotFoundException('Account with given username does not exist.');
+        }
+        if (static::HTTP_OK !== $response->code) {
+            throw new InstagramException('Response code is ' . $response->code . '. Body: ' . static::getErrorBody($response->body) . ' Something went wrong. Please report issue.', $response->code);
+        }
+
+        $jsonResponse = $this->decodeRawBodyToJson($response->raw_body);
+
+        if (!isset($jsonResponse['status']) || $jsonResponse['status'] !== 'ok') {
+            throw new InstagramException('Response code is not equal 200. Something went wrong. Please report issue.');
+        }
+        if (!isset($jsonResponse['users']) || empty($jsonResponse['users'])) {
+            return [];
+        }
+
+        $accounts = [];
+        foreach ($jsonResponse['users'] as $jsonAccount) {
+            $accounts[] = Account::create($jsonAccount['user']);
+        }
+
+        $tags = [];
+        foreach ($jsonResponse['hashtags'] as $jsonTag) {
+            $tags[] = Tag::create($jsonTag['hashtag']);
+        }
+
+
+        $locations = [];
+        foreach ($jsonResponse['places'] as $jsonPlace) {
+            $locations[] = Location::create($jsonPlace['place']);
+        }
+
+        return [
+            'accounts' => $accounts,
+            'tags' => $tags,
+            'locations' => $locations
+        ];
+    }
 
     /**
      * @param $session
